@@ -29,6 +29,16 @@ create view cs1160315_onlyjournalauthorid as select * from cs1160315_journalauth
 create view cs1160315_authoridjpaperayear as select paperByAuthors.authorid, paper.paperid, paper.year from paperbyauthors cross join paper where paperbyauthors.paperid=paper.paperid;
 create view cs1160315_authorpaperyearcount as select authorid, year, count(paperid) as co from cs1160315_authoridjpaperayear group by authorid, year;
 create view cs1160315_targetqueryq9 as select distinct authorid from cs1160315_authorpaperyearcount where year=2012 and co>1 intersect select distinct authorid from cs1160315_authorpaperyearcount where year=2013 and co>2;
+
+create view cs1160315_paperjvenueaname as select paper.paperid, paper.venueid, venue.type, venue.name from paper, venue where paper.venueid = venue.venueid;
+create view cs1160315_authorjpaperjvenueaname as select paperbyauthors.authorid, cs1160315_paperjvenueaname.paperid, cs1160315_paperjvenueaname.venueid, cs1160315_paperjvenueaname.type, cs1160315_paperjvenueaname.name from paperbyauthors cross join cs1160315_paperjvenueaname where paperbyauthors.paperid = cs1160315_paperjvenueaname.paperid;
+create view cs1160315_corrjournal as select * from cs1160315_authorjpaperjvenueaname where type='journals' and name='corr';
+create view cs1160315_targetqueryq10 as select authorid, count(authorid) as co from cs1160315_corrjournal group by authorid order by co desc limit 20;
+
+create view cs1160315_amcjournal as select * from cs1160315_authorjpaperjvenueaname where type='journals' and name='amc';
+create view cs1160315_targetqueryq11interim as select authorid, count(authorid) as co from cs1160315_amcjournal group by authorid;
+create view cs1160315_targetqueryq11 as select * from cs1160315_targetqueryq11interim where co>3;
+
 --1--
 select type, count(type) as co from venue group by type order by co desc, type;
 --2--
@@ -49,9 +59,20 @@ select name from cs1160315_onlyjournalauthorid cross join author where cs1160315
 --9--
 select name from cs1160315_targetqueryq9 cross join author where cs1160315_targetqueryq9.authorid = author.authorid order by name;
 --10--
+select name from cs1160315_targetqueryq10, author where cs1160315_targetqueryq10.authorid= author.authorid order by name;
+--11--
+select name from cs1160315_targetqueryq11, author where cs1160315_targetqueryq11.authorid=author.authorid order by name;
+--12--
 
 
 --CLEANUP--
+drop view cs1160315_targetqueryq11;
+drop view cs1160315_targetqueryq11interim;
+drop view cs1160315_amcjournal;
+drop view cs1160315_targetqueryq10;
+drop view cs1160315_corrjournal;
+drop view cs1160315_authorjpaperjvenueaname;
+drop view cs1160315_paperjvenueaname;
 drop view cs1160315_targetqueryq9;
 drop view cs1160315_authorpaperyearcount;
 drop view cs1160315_authoridjpaperayear;
