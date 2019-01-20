@@ -65,6 +65,21 @@ create view cs1160315_targetauthoridq19 as select distinct author1 as author fro
 create view cs1160315_paperjvenueanameayear as select paper.paperid, paper.year, paper.venueid, venue.name, venue.type from paper cross join venue where paper.venueid=venue.venueid;
 create view cs1160315_authorjpaperjvenueanameayear as select paperbyauthors.authorid, paperbyauthors.paperid, cs1160315_paperjvenueanameayear.year, cs1160315_paperjvenueanameayear.venueid, cs1160315_paperjvenueanameayear.name, cs1160315_paperjvenueanameayear.type from paperbyauthors cross join cs1160315_paperjvenueanameayear where paperbyauthors.paperid=cs1160315_paperjvenueanameayear.paperid;
 create view cs1160315_targetqueryq20 as select distinct authorid from cs1160315_authorjpaperjvenueanameayear where type='journals' and name='corr' and year>2008 and year < 2014 except select distinct authorid from cs1160315_authorjpaperjvenueanameayear where type='journals' and name='ieicet' and year=2009;
+
+create view cs1160315_journalcountyear as select name, year, count(name) as co from cs1160315_paperjvenueanameayear where year>2008 and year < 2014 and type='journals' group by name, year;
+create view cs1160315_y13_12 as select tab2013.name as name, tab2013.year as y2013, tab2013.co as co2013, tab2012.year as y2012, tab2012.co as co2012 from cs1160315_journalcountyear as tab2013, cs1160315_journalcountyear as tab2012 where tab2013.year=2013 and tab2012.year=2012 and tab2013.co>tab2012.co and tab2013.name=tab2012.name;
+create view cs1160315_y12_11 as select tab2012.name as name, tab2012.year as y2012, tab2012.co as co2012, tab2011.year as y2011, tab2011.co as co2011 from cs1160315_journalcountyear as tab2012, cs1160315_journalcountyear as tab2011 where tab2012.year=2012 and tab2011.year=2011 and tab2012.co>tab2011.co and tab2012.name=tab2011.name;
+create view cs1160315_y11_10 as select tab2011.name as name, tab2011.year as y2011, tab2011.co as co2011, tab2010.year as y2010, tab2010.co as co2010 from cs1160315_journalcountyear as tab2011, cs1160315_journalcountyear as tab2010 where tab2011.year=2011 and tab2010.year=2010 and tab2011.co>tab2010.co and tab2011.name=tab2010.name;
+create view cs1160315_y10_09 as select tab2010.name as name, tab2010.year as y2010, tab2010.co as co2010, tab2009.year as y2009, tab2009.co as co2009 from cs1160315_journalcountyear as tab2010, cs1160315_journalcountyear as tab2009 where tab2010.year=2010 and tab2009.year=2009 and tab2010.co>tab2009.co and tab2010.name=tab2009.name;
+create view cs1160315_y10_09addon as select distinct name from cs1160315_journalcountyear where year=2010 except select distinct name from cs1160315_journalcountyear where year=2009;
+create view cs1160315_y10_09total as select distinct name from cs1160315_y10_09 union select distinct name from cs1160315_y10_09addon;
+create view cs1160315_targetqueryq21 as select distinct name from cs1160315_y13_12 intersect select distinct name from cs1160315_y12_11 intersect select distinct name from cs1160315_y11_10 intersect select distinct name from cs1160315_y10_09total order by name; 
+
+create view cs1160315_journalcountyearall as select name, year, count(name) as co from cs1160315_paperjvenueanameayear where type='journals' group by name, year;
+
+create view cs1160315_authorjournal as select authorid, name , count(authorid) as co from cs1160315_authorjpaperjvenueaname where type='journals' group by authorid, name;
+create view cs1160315_targetqueryq23 as select authorid, name from cs1160315_authorjournal where co=(select max(co) from cs1160315_authorjournal);
+
 --1--
 select type, count(type) as co from venue group by type order by co desc, type;
 --2--
@@ -107,10 +122,26 @@ select name from cs1160315_targetauthoridq19, author where cs1160315_targetautho
 --20--
 select name from cs1160315_targetqueryq20, author where cs1160315_targetqueryq20.authorid=author.authorid order by name;
 --21--
-
+select * from cs1160315_targetqueryq21;
+--22--
+select name, year from cs1160315_journalcountyearall where co=(select max(co) from cs1160315_journalcountyearall) order by year, name; 
+--23--
+select cs1160315_targetqueryq23.name, author.name from author, cs1160315_targetqueryq23 where author.authorid=cs1160315_targetqueryq23.authorid order by cs1160315_targetqueryq23.name, author.name;
+--24--
 
 
 --CLEANUP--
+drop view cs1160315_authorjournal;
+drop view cs1160315_targetqueryq23;
+drop view cs1160315_journalcountyearall;
+drop view cs1160315_targetqueryq21;
+drop view cs1160315_y10_09total;
+drop view cs1160315_y10_09addon;
+drop view cs1160315_y10_09;
+drop view cs1160315_y11_10;
+drop view cs1160315_y12_11;
+drop view cs1160315_y13_12;
+drop view cs1160315_journalcountyear;
 drop view cs1160315_targetqueryq20;
 drop view cs1160315_authorjpaperjvenueanameayear;
 drop view cs1160315_paperjvenueanameayear;
