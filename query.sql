@@ -39,6 +39,32 @@ create view cs1160315_amcjournal as select * from cs1160315_authorjpaperjvenuean
 create view cs1160315_targetqueryq11interim as select authorid, count(authorid) as co from cs1160315_amcjournal group by authorid;
 create view cs1160315_targetqueryq11 as select * from cs1160315_targetqueryq11interim where co>3;
 
+create view cs1160315_ieicetjournal as select * from cs1160315_authorjpaperjvenueaname where type='journals' and name='ieicet';
+create view cs1160315_ieicetcount as select authorid, count(authorid) as co from cs1160315_ieicetjournal group by authorid;
+create view cs1160315_targetieicet as select authorid from cs1160315_ieicetcount where co>9;
+create view cs1160315_tcsjournal as select * from cs1160315_authorjpaperjvenueaname where type='journals' and name='tcs';
+create view cs1160315_targettcs as select distinct authorid from cs1160315_tcsjournal;
+create view cs1160315_targetqueryq12 as select * from cs1160315_targetieicet except select * from cs1160315_targettcs;
+
+
+create view cs1160315_queryopti as select paperid from paper where upper(title) like '%QUERY_%OPTIMIZATION%';
+create view cs1160315_targetqueryq14 as select distinct authorid from paperbyauthors cross join cs1160315_queryopti where paperbyauthors.paperid=cs1160315_queryopti.paperid;
+
+create view cs1160315_citationcount as select paper2id, count(paper2id) as co from citation group by paper2id;
+create view cs1160315_beingcitedcount as select paper1id, count(paper1id) as co from citation group by paper1id;
+create view cs1160315_leftoutercit as select paper2id, cs1160315_citationcount.co as co2, paper1id, cs1160315_beingcitedcount.co as co1 from cs1160315_citationcount left outer join cs1160315_beingcitedcount on cs1160315_citationcount.paper2id=cs1160315_beingcitedcount.paper1id;
+create view cs1160315_targetqueryq17 as select paper2id from cs1160315_leftoutercit where (co2>co1+10) or (paper1id is null and co2 > 10);
+
+create view cs1160315_noncited as select paperid from paper except select distinct paper2id as paperid from citation;
+
+
+create view cs1160315_authcite as select paperbyauthors.authorid as author1, paper1id, paper2id from paperbyauthors cross join citation where paperbyauthors.paperid = citation.paper1id;
+create view cs1160315_authciteauth as select author1, paper1id, paper2id, paperbyauthors.authorid as author2 from cs1160315_authcite cross join paperbyauthors where cs1160315_authcite.paper2id=paperbyauthors.paperid;
+create view cs1160315_targetauthoridq19 as select distinct author1 as author from cs1160315_authciteauth where author1=author2;
+
+create view cs1160315_paperjvenueanameayear as select paper.paperid, paper.year, paper.venueid, venue.name, venue.type from paper cross join venue where paper.venueid=venue.venueid;
+create view cs1160315_authorjpaperjvenueanameayear as select paperbyauthors.authorid, paperbyauthors.paperid, cs1160315_paperjvenueanameayear.year, cs1160315_paperjvenueanameayear.venueid, cs1160315_paperjvenueanameayear.name, cs1160315_paperjvenueanameayear.type from paperbyauthors cross join cs1160315_paperjvenueanameayear where paperbyauthors.paperid=cs1160315_paperjvenueanameayear.paperid;
+create view cs1160315_targetqueryq20 as select distinct authorid from cs1160315_authorjpaperjvenueanameayear where type='journals' and name='corr' and year>2008 and year < 2014 except select distinct authorid from cs1160315_authorjpaperjvenueanameayear where type='journals' and name='ieicet' and year=2009;
 --1--
 select type, count(type) as co from venue group by type order by co desc, type;
 --2--
@@ -63,9 +89,47 @@ select name from cs1160315_targetqueryq10, author where cs1160315_targetqueryq10
 --11--
 select name from cs1160315_targetqueryq11, author where cs1160315_targetqueryq11.authorid=author.authorid order by name;
 --12--
+select name from cs1160315_targetqueryq12, author where cs1160315_targetqueryq12.authorid=author.authorid order by name;
+--13--
+select year, count(year) as co from paper where year>2003 and year<2014 group by year order by year;
+--14--
+select count(authorid) from cs1160315_targetqueryq14;
+--15--
+select title from cs1160315_citationcount, paper where cs1160315_citationcount.paper2id=paper.paperid order by co desc, title;
+--16--
+select title from cs1160315_citationcount, paper where cs1160315_citationcount.paper2id=paper.paperid and co>10 order by title;
+--17--
+select title from cs1160315_targetqueryq17, paper where paper.paperid=cs1160315_targetqueryq17.paper2id order by title;
+--18--
+select title from paper, cs1160315_noncited where paper.paperid = cs1160315_noncited.paperid order by title;
+--19--
+select name from cs1160315_targetauthoridq19, author where cs1160315_targetauthoridq19.author=author.authorid order by name;
+--20--
+select name from cs1160315_targetqueryq20, author where cs1160315_targetqueryq20.authorid=author.authorid order by name;
+--21--
+
 
 
 --CLEANUP--
+drop view cs1160315_targetqueryq20;
+drop view cs1160315_authorjpaperjvenueanameayear;
+drop view cs1160315_paperjvenueanameayear;
+drop view cs1160315_targetauthoridq19;
+drop view cs1160315_authciteauth;
+drop view cs1160315_authcite;
+drop view cs1160315_noncited;
+drop view cs1160315_targetqueryq17;
+drop view cs1160315_leftoutercit;
+drop view cs1160315_beingcitedcount;
+drop view cs1160315_citationcount;
+drop view cs1160315_targetqueryq14;
+drop view cs1160315_queryopti;
+drop view cs1160315_targetqueryq12;
+drop view cs1160315_targettcs;
+drop view cs1160315_tcsjournal;
+drop view cs1160315_targetieicet;
+drop view cs1160315_ieicetcount;
+drop view cs1160315_ieicetjournal;
 drop view cs1160315_targetqueryq11;
 drop view cs1160315_targetqueryq11interim;
 drop view cs1160315_amcjournal;
