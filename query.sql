@@ -1,5 +1,3 @@
-\timing
-
 --PREAMBLE--
 
 create view cs1160315_paperidcount as select PaperId, count(PaperId) as co from paperByAuthors group by PaperId order by co desc, PaperId;
@@ -59,6 +57,10 @@ create view cs1160315_leftoutercitbackup as select paper2id, cs1160315_citationc
 create view cs1160315_targetqueryq17backup as select paper2id from cs1160315_leftoutercitbackup where (co2>co1+9);
 
 create view cs1160315_noncited as select paperid from paper except select distinct paper2id as paperid from citation;
+create view cs1160315_alltitlesq18 as select distinct title from paper;
+create view cs1160315_citedpaperidq18 as select distinct paper2id as paperid from citation;
+create view cs1160315_citedpapertitleq18 as select distinct title from cs1160315_citedpaperidq18, paper where cs1160315_citedpaperidq18.paperid=paper.paperid;
+create view cs1160315_finansq18 as select * from cs1160315_alltitlesq18 except select * from cs1160315_citedpapertitleq18;
 
 
 create view cs1160315_authcite as select paperbyauthors.authorid as author1, paper1id, paper2id from paperbyauthors cross join citation where paperbyauthors.paperid = citation.paper1id;
@@ -103,57 +105,78 @@ create view cs1160315_zeroauthors as select distinct authorid from author except
 create view cs1160315_finauthoridhindex as select authorid, 0 as max from cs1160315_zeroauthors union select * from cs1160315_authoridhindex;
 
 
---just apply "order by title asc" at the end of the query--
-
 --1--
 select type, count(type) as co from cs1160315_paperjvenue group by type order by co desc, type;
+
 --2--
 select avg(co) from cs1160315_paperidcount;
+
 --3--
 select distinct Title from cs1160315_morethan20authors, Paper where cs1160315_morethan20authors.Paperid = Paper.Paperid order by Title;
+
 --4--
 select name from cs1160315_targetauthoridq4, author where cs1160315_targetauthoridq4.authorid = author.authorid order by name;
+
 --5--
 select name from cs1160315_top20authorid, author where cs1160315_top20authorid.authorid = author.authorid order by co desc, name;
+
 --6--
 select name from cs1160315_targetqueryq6, author where cs1160315_targetqueryq6.authorid = author.authorid order by name;
+
 --7--
 select name from author, cs1160315_targetqueryq7 where author.authorid = cs1160315_targetqueryq7.authorid order by name;
+
 --8--
 select name from cs1160315_onlyjournalauthorid cross join author where cs1160315_onlyjournalauthorid.authorid=author.authorid order by name;
+
 --9--
 select name from cs1160315_targetqueryq9 cross join author where cs1160315_targetqueryq9.authorid = author.authorid order by name;
+
 --10--
 select name from cs1160315_targetqueryq10, author where cs1160315_targetqueryq10.authorid= author.authorid order by co desc, name;
+
 --11--
 select name from cs1160315_targetqueryq11, author where cs1160315_targetqueryq11.authorid=author.authorid order by name;
+
 --12--
 select name from cs1160315_targetqueryq12, author where cs1160315_targetqueryq12.authorid=author.authorid order by name;
+
 --13--
 select year, count(year) as co from paper where year>2003 and year<2014 group by year order by year;
+
 --14--
 select count(authorid) from cs1160315_targetqueryq14;
+
 --15--
 select title from cs1160315_citationcount, paper where cs1160315_citationcount.paper2id=paper.paperid order by co desc, title;
+
 --16--
 select distinct title from cs1160315_citationcount, paper where cs1160315_citationcount.paper2id=paper.paperid and co>10 order by title;
+
 --17--
--- select distinct title from cs1160315_targetqueryq17, paper where paper.paperid=cs1160315_targetqueryq17.paper2id order by title;
 select distinct title from cs1160315_targetqueryq17backup, paper where paper.paperid=cs1160315_targetqueryq17backup.paper2id order by title;
+
 --18--
-select distinct title from paper, cs1160315_noncited where paper.paperid = cs1160315_noncited.paperid order by title;
+select distinct title from cs1160315_finansq18 order by title;
+
 --19--
 select name from cs1160315_targetauthoridq19, author where cs1160315_targetauthoridq19.author=author.authorid order by name;
+
 --20--
 select name from cs1160315_targetqueryq20, author where cs1160315_targetqueryq20.authorid=author.authorid order by name;
+
 --21--
 select * from cs1160315_targetqueryq21;
+
 --22--
 select name, year from cs1160315_journalcountyearall where co=(select max(co) from cs1160315_journalcountyearall) order by year, name;
+
 --23--
 select cs1160315_targetqueryq23.name as journalname, author.name as authorname from author, cs1160315_targetqueryq23 where author.authorid=cs1160315_targetqueryq23.authorid order by journalname, authorname;
+
 --24--
 select * from cs1160315_targetqueryq24 order by co desc, name;
+
 --25--
 select name, max as hindex from author, cs1160315_authoridhindex where author.authorid=cs1160315_authoridhindex.authorid order by hindex desc, name;
 
@@ -192,6 +215,10 @@ drop view cs1160315_paperjvenueanameayear cascade;
 drop view cs1160315_targetauthoridq19 cascade;
 drop view cs1160315_authciteauth cascade;
 drop view cs1160315_authcite cascade;
+drop view cs1160315_finansq18 cascade;
+drop view cs1160315_citedpapertitleq18 cascade;
+drop view cs1160315_citedpaperidq18 cascade;
+drop view cs1160315_alltitlesq18 cascade;
 drop view cs1160315_noncited cascade;
 drop view cs1160315_targetqueryq17backup cascade;
 drop view cs1160315_leftoutercitbackup cascade;
