@@ -80,6 +80,27 @@ create view cs1160315_journalcountyearall as select name, year, count(name) as c
 create view cs1160315_authorjournal as select authorid, name , count(authorid) as co from cs1160315_authorjpaperjvenueaname where type='journals' group by authorid, name;
 create view cs1160315_targetqueryq23 as select authorid, name from cs1160315_authorjournal where co=(select max(co) from cs1160315_authorjournal);
 
+create view paperjvenueq24 as select paper.paperid, paper.year, venue.name from paper cross join venue where paper.venueid=venue.venueid and paper.year>2006 and paper.year<2010 and venue.type='journals';
+create view journcite as select paperjvenueq24.paperid as paper1id, paperjvenueq24.year as paper1year, paperjvenueq24.name as paper1name, citation.paper2id as paper2id from paperjvenueq24, citation where paperjvenueq24.paperid=citation.paper1id;
+create view journcitejourn as select journcite.paper1id, journcite.paper1year, journcite.paper1name, journcite.paper2id as paper2id, paperjvenueq24.year as paper2year, paperjvenueq24.name as paper2name from journcite, paperjvenueq24 where journcite.paper2id=paperjvenueq24.paperid;
+create view cittable as select paper2name as citpapername, count(paper2name) as citco from journcitejourn where (paper2year=2007 or paper2year=2008) and paper1year=2009 group by paper2name;
+create view pubtable as select name as pubpapername, count(name) as pubco from paperjvenueq24 where paperjvenueq24.year=2007 or paperjvenueq24.year=2008 group by name;
+create view havetable as select pubtable.pubpapername as name, citco/pubco as co from pubtable, cittable where pubpapername=citpapername;
+create view nottableinterim as select pubpapername as name from pubtable except select citpapername as name from cittable; 
+create view notable as select name, 0 as co from nottableinterim;
+create view targetqueryq24 as select * from havetable union select * from notable order by co desc, name;
+
+create view papercitcount as select paper2id as paperid, count(paper2id) as co from citation group by paper2id;
+create view authoridjcitcount as select authorid, paperbyauthors.paperid, co from paperbyauthors, papercitcount where paperbyauthors.paperid=papercitcount.paperid;
+create view addedrow as select row_number() over (partition by authorid order by co desc), authorid, paperid, co from authoridjcitcount;
+create view curbrow as select * from addedrow where row_number<=co order by authorid, co desc;
+create view authoridhindex as select authorid, max(row_number) from curbrow group by authorid;
+create view zeroauthors as select distinct authorid from author except select authorid from authoridhindex;
+create view finauthoridhindex as select authorid, 0 as max from zeroauthors union select * from authoridhindex;
+
+
+--just apply "order by title asc" at the end of the query--
+
 --1--
 select type, count(type) as co from venue group by type order by co desc, type;
 --2--
@@ -128,9 +149,27 @@ select name, year from cs1160315_journalcountyearall where co=(select max(co) fr
 --23--
 select cs1160315_targetqueryq23.name, author.name from author, cs1160315_targetqueryq23 where author.authorid=cs1160315_targetqueryq23.authorid order by cs1160315_targetqueryq23.name, author.name;
 --24--
-
+select * from targetqueryq24;
+--25--
+select name, max as hindex from author, finauthoridhindex where author.authorid=finauthoridhindex.authorid order by hindex desc, name;
 
 --CLEANUP--
+drop view finauthoridhindex;
+drop view zeroauthors;
+drop view authoridhindex;
+drop view curbrow;
+drop view addedrow;
+drop view authoridjcitcount;
+drop view papercitcount;
+drop view targetqueryq24;
+drop view notable;
+drop view nottableinterim;
+drop view havetable;
+drop view pubtable;
+drop view cittable;
+drop view journcitejourn;
+drop view journcite;
+drop view paperjvenueq24;
 drop view cs1160315_authorjournal;
 drop view cs1160315_targetqueryq23;
 drop view cs1160315_journalcountyearall;
